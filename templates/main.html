@@ -1,6 +1,6 @@
 <html lang="en">
   <head>
-    <title>Quickχ v0.1</title>
+    <title>SPA v0.1</title>
     <link
       rel="stylesheet"
       href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"
@@ -21,45 +21,71 @@
         stroke-width: 3;
       }
 
-      .overlay {
-        fill: none;
-        pointer-events: all;
-      }
 
-      .dot {
-        fill: #ffab00;
-        stroke: #fff;
-      }
-
-      .focus circle {
-        fill: none;
-        stroke: steelblue;
-      }
     </style>
   </head>
   <body>
+   <p style="color:red"> {{ err }} </p>
+
     <div id="map"></div>
     <!-- D3 script modified from https://bl.ocks.org/gordlea/27370d1eea8464b04538e6d8ced39e89 by Gord Lea, MIT license -->
 
     <script>
+     var address = window.location.search
+        var vdata = {{ data }}; // Location of streams
+        var zdata = {{ zdata }}; // Distance + elevation of streams
+        var plist = new URLSearchParams(address); 
+        var basin_extract = {{ basin_extract }}; //Are we in upstream mode?
+        var d8 = {{ d8 }}; //Are we using unconditioned d8?
+        var dist = {{ dist }}  //Distance array (for comparing line plot with position on map)
+        var code = {{ code }}; // User code 
+        var dem2 = plist.get('dem2') // Should we get dems from unconditioned source?
+        var theta = {{ theta }};  // Theta for chi calcs
+        var stamen = plist.get('stamen') // Are we using stamen maps?
+    //if ({{ mainpage }}){
+    if (stamen == 1){
+        document.write('Current map is Stamen Topo: <a href = "profiler?theta='+theta+'&stamen=0&basin_extract='+basin_extract+'&d8='+d8+'&longitude={{ lon1 }}&latitude={{ lat1 }}&zoom={{ z }}"> Use OpenTopoMap?</a> <br>')
+
+        }
+    else{
+         
+        document.write('Current map is OSM: <a href = "profiler?theta='+theta+'&stamen=1&basin_extract='+basin_extract+'&d8='+d8+'&longitude={{ lon1 }}&latitude={{ lat1 }}&zoom={{ z }}"> Use Stamen Topo?</a> <br>')
+    }
+    
+    //}
+    if (stamen == 1){
+    var tile = 'https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png'
+    var att = 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> (CC-BY-SA)'
+   
+    }
+    else{
+        var tile = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+        var att = '&copy; <a href="https://www.opentopomap.org/copyright">OpenStreetMap</a> contributors map style: © OpenTopoMap (CC-BY-SA)'
+    }
+        var map = L.map('map').setView([{{ lat1 }}, {{ lon1 }}], {{ z }});
+
+
+
+
     document.write('<div class="row">')
     document.write('<div class="column"></div>')
-      
 
-        var address = window.location.search
-        var plist = new URLSearchParams(address)
-        var d8 = plist.get('d8')
-        //var mars = plist.get('user_wants_to_leave_earth')
-        var code = {{ code }};
-        var dem2 = plist.get('dem2')
-        var map = L.map('map').setView([{{ lat1 }}, {{ lon1 }}], {{ z }});
+
           map.on('click',
               function(e){
                   var c = e.latlng;
                   var lat = c.lat;
                   var lng = c.lng;
+
                   var zoom = map.getZoom()
-                  var html = 'Profile to elevation: <form action = "/downstream"><br><input type="text" id="elev" name="elev" value = "{{ elevl }}""><br> Gaussian smoothing level (sigma): <form action = "/downstream"><br><input type="text" id="smooth" name="smooth" value = "3"><br>  <input type="hidden" id="code" name = "code" value= "{{ code }}" > <input type="hidden" id="dem2" name = "dem2" value= '+dem2+' > <input type="hidden" id="zoom" name = "zoom" value= '+zoom+' > <input type="hidden" id="longitude" name = "longitude" value= '+lng+' > <input type="hidden" id="latitude" name = "latitude" value= '+lat+' ><input type="hidden" id="d8" name = "d8" value= '+d8+' > <input type="submit" value="Submit"> </form>'
+                  
+                  //Undoubtably there is a better way to do this, but here is a method of sending all the river data and preferences to the backend.
+                  if (basin_extract){
+                    var html = '<form action = "/get_profiles"><br> Threshold area (km<sup>2): <input type="text" id="athres" name="athres" value = "{{ athres }}""> <input type="hidden" id="code" name = "code" value= "{{ code }}" > <input type="hidden" id="dem2" name = "dem2" value= '+dem2+' > <input type="hidden" id="basin_extract" name = "basin_extract" value= '+basin_extract+' > <input type="hidden" id="zoom" name = "zoom" value= '+zoom+' > <input type="hidden" id="theta" name = "theta" value= '+theta+' > <input type="hidden" id="longitude" name = "longitude" value= '+lng+' > <input type="hidden" id="latitude" name = "latitude" value= '+lat+' ><input type="hidden" id="d8" name = "d8" value= '+d8+' ><input type="hidden" id="stamen" name="stamen" value = '+stamen+'>  <input type="submit" value="Submit"> </form>'
+                  }
+                  else{
+                    var html = 'Profile to elevation: <form action = "/get_profiles"><br><input type="text" id="elev" name="elev" value = "{{ elevl }}""><br> Gaussian smoothing level (sigma): <form action = "/get_profiles"><br><input type="text" id="smooth" name="smooth" value = "3"><br>  <input type="hidden" id="code" name = "code" value= "{{ code }}" ><input type="hidden" id="theta" name = "theta" value= '+theta+' > <input type="hidden" id="dem2" name = "dem2" value= '+dem2+' > <input type="hidden" id="basin_extract" name = "basin_extract" value= '+basin_extract+' > <input type="hidden" id="zoom" name = "zoom" value= '+zoom+' > <input type="hidden" id="longitude" name = "longitude" value= '+lng+' > <input type="hidden" id="latitude" name = "latitude" value= '+lat+' ><input type="hidden" id="d8" name = "d8" value= '+d8+' ><input type="hidden" id="stamen" name="stamen" value = '+stamen+'>  <input type="submit" value="Submit"> </form>'
+                  }
                   var m1 = L.marker(e.latlng, {draggable:'true'}).addTo(map)
                   .bindPopup(html).openPopup();
           });
@@ -68,48 +94,47 @@
 
 
       var marker3 = L.marker([1,1]).addTo(map);
-      if (0){
-var baselayer = new L.tileLayer('http://s3-eu-west-1.amazonaws.com/whereonmars.cartodb.net/celestia_mars-shaded-16k_global/{z}/{x}/{y}.png', {
-			zoom: 3,
-			tms: true,
-		}).addTo(map).setZIndex(0)
 
-          var polyline = L.polyline({{ data }}, {weight: 3}).addTo(map);
-      }
-      else{
-        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+            L.tileLayer(tile,
           {
             maxZoom: 17,
-            minZoom: 1
+            minZoom: 1,
+            attribution: att
           }).addTo(map);
-          var polyline = L.polyline({{ data }}, {weight: 3}).addTo(map);
-        }
-            if (d8 == 1){
-                document.write('<br> Currently using d8 flow routing.  Use <a href="{{ ('profiler') }}?d8=0"> Use hydrosheds </a> ')
-              }
-                else{
-                     document.write('<br> Currently using Hydrosheds DEM and flow routing, which is better for lowlands and large rivers. For high, steep rivers, <a href="{{ ('profiler') }}?d8=1"> use d8 flow routing</a>.')
-                }
-      if ({{mainpage}} == 0) {
-        document.write('<br> Move cursor along the plot to see its placement.  Scroll down for more plotting and downloading options')
 
 
-          
-      var margin = {top: 50, right: 50, bottom: 50, left: 50}
+          if ({{ mainpage }} == 0){
+
+            if (basin_extract){
+              var polyline = L.multiPolyline(vdata, {weight: 3}).addTo(map);
+            }
+            else{
+              var polyline = L.polyline(vdata, {weight: 3}).addTo(map);
+            }
+          }
+
+
+      if ({{ mainpage }} == 0) {
+
+          document.write('<br> Move cursor along the plot to see its placement.  Scroll down for more plotting and downloading options')
+
+
+
+      var margin = {top: 50, right: 50, bottom: 80, left: 50}
         , width = 500
         , height = 150;
 
-      var xScale = d3.scaleLinear()
+      var xs = d3.scaleLinear()
           .domain([0, {{ maxdist }}]) // input
           .range([0, width]); // output
-          
-      var yScale = d3.scaleLinear()
+
+      var ys = d3.scaleLinear()
           .domain([{{ maxz }}, {{ minz }}])
           .range([0, height]); // output
 
       var line = d3.line()
-          .x(function(d) { return xScale(d[0]); })
-          .y(function(d) { return yScale(d[1]); })
+          .x(function(d) { return xs(d[0]); })
+          .y(function(d) { return ys(d[1]); })
           .curve(d3.curveMonotoneX)
 
       var svg = d3.select("body").append("svg")
@@ -120,7 +145,7 @@ var baselayer = new L.tileLayer('http://s3-eu-west-1.amazonaws.com/whereonmars.c
 
       svg.append("g")
           .attr("transform", "translate(0," + height + ")")
-          .call(d3.axisBottom(xScale));
+          .call(d3.axisBottom(xs));
 
       svg.append("text")
         .attr("transform",
@@ -131,46 +156,130 @@ var baselayer = new L.tileLayer('http://s3-eu-west-1.amazonaws.com/whereonmars.c
 
       svg.append("g")
           .attr("class", "y axis")
-          .call(d3.axisLeft(yScale));
+          .call(d3.axisLeft(ys));
 
-      svg.append("path")
-          .datum({{ zdata }})
+      if (basin_extract){
+          svg.selectAll(".line")
+          .data({{ zdata }})
+          .enter().append("path")
           .attr("class", "line")
-          .attr("d", line);
+          .attr("opacity",.8)
+          .attr("d", line)
+
+          .on("click", function() {
+           d3.selectAll(".line").style("opacity", .25)
+           d3.select(this).style("opacity",1.0)
+           });
+      }
+      else{
+           svg.append("path")
+           .datum(zdata)
+           .attr("class", "line")
+           .attr("d", line);
+      }
+
+
       var marker2 = svg.append("circle");
       marker2.attr("r", 5);
 
-      function mindist(a,b){
-          var lmin = 9999999
-          var imin = 0
-          for (let i = 0; i < a.length; i++) {
-              ls = Math.abs(a[i] - b)
-              if (ls < lmin){
+        // Calculate total distance between points di, zi - including along stream distance dists[i] - di and elevation distance z[i] - zi.  Because z is often much smaller than di, must normalize by the maximum range.  We return the river (imin) and node (jmin) indicies of the closest point to (di,zi)
+        function mindist_multi(dists,di,z,zi,drange, zrange){
+            var lmin = 9999999
+            var imin = 0
+            var jmin = 0
+            for (let i = 0; i < dists.length; i++) {
+              for (let j = 0; j < dists[i].length; j++) {
+                ls = Math.abs(z[i][j][1] - zi) / zrange + Math.abs(dists[i][j][0] - di) / drange
+                if (ls < lmin){
 
-                  lmin = ls
-                  imin = i
+                    lmin = ls
+                    imin = i
+                    jmin = j
+
+                }
+            }
+
+        }
+        return [imin, jmin]
+        }
+         // Calculate total distance between points di, zi - including along stream distance dists[i] - di . We return the river (imin) and node (jmin) indicies of the closest point to (di,zi)
+         function mindist(dists,di){
+              var lmin = 9999999
+              var imin = 0
+              for (let i = 0; i < dists.length; i++) {
+                  ls = Math.abs(dists[i] - di)
+                  if (ls < lmin){
+
+                      lmin = ls
+                      imin = i
+                  }
               }
+
+              return imin
           }
 
-          return imin
-      }
-    
+        // On mouseover, invoke one of the mindist functions and determine the indices of the closest point on the map.  Update the marker to that point.
+       if (basin_extract)
+       {
        svg.on('mousemove', function() {
            var coords = d3.pointer( event );
            marker2.attr('transform',"translate(" + coords[0] + "," + coords[1] + ")")
            l = coords[0] / width * {{ maxdist }}
+           z = {{ maxz }} -coords[1] / height * ({{ maxz }} - {{ minz }})
 
-           var i1 = mindist({{ dist }}, l)
-           ll = {{ data }}[i1]
+           ij = mindist_multi(dist, l, zdata, z, {{ maxdist }}, {{ maxz }} - {{ minz }})
+           i1 = ij[0]
+           j1 = ij[1]
+           ll = vdata[i1][j1]
            marker3.setLatLng(new L.LatLng(ll[0], ll[1]))
           });
+        }
+        else{
+              svg.on('mousemove', function() {
+             var coords = d3.pointer( event );
+             marker2.attr('transform',"translate(" + coords[0] + "," + coords[1] + ")")
+             l = coords[0] / width * {{ maxdist }}
+             i1 = mindist(dist, l)
+             ll = vdata[i1]
+             marker3.setLatLng(new L.LatLng(ll[0], ll[1]))
+          });
+          }
+        }
+        if (basin_extract){
+              document.write('You are profiling upstream to extract whole basins.  To extract individual rivers use <a href ="{{ ('profiler') }}?basin_extract=0&d8='+d8+'&theta='+theta+'&stamen='+stamen+'&longitude={{ lon1 }}&latitude={{ lat1 }}&zoom={{ z }}"> downstream mode </a>');
+              if ({{ mainpage }}){
+                document.write( " <br> The default ϴ for χ calculations is currently set to:  <form action = '/profiler'> <input type='hidden' id='basin_extract' name = 'basin_extract' value= "+basin_extract+" >  <input type='hidden' id='d8' name = 'd8' value= "+d8+" ><input type='text' id='theta' name='theta' value = "+theta+"> <input type='hidden' id='stamen' name='stamen' value = '+stamen+'> <input type='submit' value='submit'> </form>");
+              }
 
-
+        }
+        else{
+              document.write('You are profiling downstream to extract individual rivers.  To extract whole basins use <a href ="{{ ('profiler') }}?basin_extract=1&d8='+d8+'&theta='+theta+'&stamen='+stamen+'&longitude={{ lon1 }}&latitude={{ lat1 }}&zoom={{ z }}"> upstream mode </a>');
+        }
          document.write('</div>')
-          
+        
+        //The image of basin stats should be "safe"
+          if (!({{ mainpage }})){
+          if (basin_extract){
+            document.write("<p> </p>> {{ stats | safe }}")
+            document.write('<p> </p>')
+           }
+           }
+          if (!({{ mainpage }})){
+          if (basin_extract){
+            document.write('<a href="{{ url_for('chiplot_multi') }}?code={{ code }}" target="blank"> Chi-Elevation Profile </a>')
+          }
+          else{
+            document.write('<a href="{{ url_for('chiplot') }}?code={{ code }}" target="blank"> Chi-Elevation Profile </a>')
+          }
           document.write('<p> </p>')
-          document.write('<a href="{{ url_for('chiplot') }}?code={{ code }}" target="blank"> Chi-Elevation Profile </a>')
-          document.write('<p> </p>')
+            if (d8 == 1){
+                document.write('<br> Currently using d8 flow routing.  Use <a href="{{ ('profiler') }}?d8=0&basin_extract='+basin_extract+'&theta='+theta+'&stamen='+stamen+'"> Use hydrosheds </a> ')
+              }
+                else{
+                     document.write('<br> Currently using Hydrosheds DEM and flow routing, which is better for lowlands and large rivers. For high, steep rivers, <a href="{{ ('profiler') }}?d8=1&basin_extract='+basin_extract+'&theta='+theta+'&stamen='+stamen+'"> use unconditioned d8 flow routing</a>.')
+             }
+
+
 
           document.write('<p> </p>')
           document.write('Download: <a href="{{ url_for('get_elev') }}?code={{ code }}" target="blank"> Elevation </a>')
@@ -181,11 +290,18 @@ var baselayer = new L.tileLayer('http://s3-eu-west-1.amazonaws.com/whereonmars.c
           document.write(', <a href="{{ url_for('get_shp') }}?code={{ code }}" target="blank"> shapefile </a>')
 
           }
-                else{
-              document.write('{{ err }}')
 
-              document.write('<br> Click on headwaters to begin (please wait up to 30 seconds to load).  A few browsers have reported timeout error for large rivers, in which case it will probably work to hit "refresh"')
+          if ({{ mainpage }} ){
+              if (basin_extract){
+                  document.write('<br> <p style="color:red">Click on a trunk river to profile the basin upstream of selected point (please wait up to 30 seconds to load).  A few browsers have reported timeout error for large rivers, in which case it will probably work to hit "refresh" </p>')
 
+              }
+              else{
+                document.write('<br><p style="color:red"> Click on headwaters to begin (please wait up to 30 seconds to load). </p>')
+              }
+          }
+          else{
+            document.write("<br> <a href = '/other_functions?code={{ code }}' target='blank' > Other functions </a>")
           }
 
     </script>
