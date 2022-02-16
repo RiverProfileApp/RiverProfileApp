@@ -1,5 +1,5 @@
 
-# ProfilerApp
+# RiverProfileApp
 
 ## Seting up your own implementation of the server
 Global stream profiler web app. 
