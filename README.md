@@ -2,7 +2,7 @@
 # RiverProfileApp
 
 ## Seting up your own implementation of the server
-Global stream profiler web app. 
+Global river profile web app. 
 
 To set up, add the appropriate directories in, global variables in profiler_app.py, eg:
 
@@ -15,11 +15,13 @@ If you are running a small server, you can get away with Flask's built-in cachin
 
 Tests can be run on both the server and to verify integrity of the data, these are available with instructions from the notebooks in the tests folder 
 
-You can obtain the grid files from the google drive link, and unzip them:
+You can obtain the grid files for custom flow routing from the google drive link, and unzip them:
 
 https://drive.google.com/drive/folders/144QhSimTndRFO2n0Cn9y4gcwE_zzBPKN?usp=sharing
 
 Or, for power users, you can build the grids yourself using the functions in the GlobalStack repository (see more details in the readme file there).  The app currently assumes 3 arc-second resolution of the grids.  You will need to change the "res" global variable if your grids are different (res is currently set to be the values of pixels/degree, so for 3 arc-seconds this is 1200)
+
+Hydrosheds data will require downloading the data from the Hydrosheds website, hydrosheds.org
 
 ## Custom functions
 
